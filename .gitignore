@@ -1,0 +1,30 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.test.go
+/go/bin/
+/go/pkg/
+/coverage.out
+/ecs-aws-app
+
+# Docker
+.env
+.env.local
+.docker/
+*.tar
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Temp
+/tmp/

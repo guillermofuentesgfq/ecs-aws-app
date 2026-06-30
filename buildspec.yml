@@ -1,0 +1,38 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      golang: 1.22
+    commands:
+      - echo "Installing dependencies..."
+      - go mod download
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Build started on $(date)"
+  build:
+    commands:
+      - echo "Building the Go binary..."
+      - go build -o bin/app -ldflags="-s -w" main.go
+      - echo "Building the Docker image..."
+      - docker build -t $REPO_URI:$IMAGE_TAG .
+      - docker tag $REPO_URI:$IMAGE_TAG $REPO_URI:latest
+  post_build:
+    commands:
+      - echo "Pushing Docker image..."
+      - docker push $REPO_URI:$IMAGE_TAG
+      - docker push $REPO_URI:latest
+      - echo "Creating imagedefinitions.json..."
+      - printf '[{"name":"app","imageUri":"%s"}]' $REPO_URI:$IMAGE_TAG > imagedefinitions.json
+      - echo "Build completed on $(date)"
+artifacts:
+  files:
+    - imagedefinitions.json
+  discard-paths: yes
+cache:
+  paths:
+    - /root/.cache/go-build/**
